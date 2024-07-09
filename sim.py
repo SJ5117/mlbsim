@@ -52,16 +52,17 @@ def parse_lineups(file_path):
     current_game = None
     away_team = None
     home_team = None
-    away_pitcher = None
-    home_pitcher = None
     lineup_start = False
-    
+    pitcher_lines = 0
+
     for i, line in enumerate(lines):
         line = line.strip()
         if not line:
             continue
 
-        if line == "@":
+        if "@" in line:
+            if current_game:
+                games.append(current_game)
             away_team = lines[i - 1].strip()
             home_team = lines[i + 1].strip()
 
@@ -77,6 +78,8 @@ def parse_lineups(file_path):
                 'home_lineup': [],
                 'away_lineup': []
             }
+            pitcher_lines = 0
+            lineup_start = False
             continue
 
         if "Lineup" in line:
@@ -86,20 +89,17 @@ def parse_lineups(file_path):
         if lineup_start:
             if len(current_game['away_lineup']) < 9:
                 current_game['away_lineup'].append(extract_name(line))
-            else:
+            elif len(current_game['home_lineup']) < 9:
                 current_game['home_lineup'].append(extract_name(line))
 
         if line in ["RHP", "LHP"]:
             pitcher_name = extract_name(lines[i - 1].strip())
-            if not current_game['away_pitcher']:
+            if pitcher_lines == 0:
                 current_game['away_pitcher'] = pitcher_name
+                pitcher_lines += 1
             else:
                 current_game['home_pitcher'] = pitcher_name
-
-        if line == "" and current_game:
-            games.append(current_game)
-            current_game = None
-            lineup_start = False
+                pitcher_lines += 1
 
     if current_game:
         games.append(current_game)
@@ -232,7 +232,10 @@ def simulate_game(home_lineup, away_lineup, pitcher_stats_home, pitcher_stats_aw
                         if bases[1]:
                             if bases[2]:
                                 bases, increment = advance_runners(bases, 'single')
-                                home_score += increment
+                                if team == 'away':
+                                    away_score += increment
+                                else:
+                                    home_score += increment
                             else:
                                 bases[2] = True
                         else:
@@ -267,7 +270,10 @@ def simulate_game(home_lineup, away_lineup, pitcher_stats_home, pitcher_stats_aw
                         if bases[1]:
                             if bases[2]:
                                 bases, increment = advance_runners(bases, 'single')
-                                home_score += increment
+                                if team == 'away':
+                                    away_score += increment
+                                else:
+                                    home_score += increment
                             else:
                                 bases[2] = True
                         else:
@@ -288,9 +294,8 @@ def simulate_game(home_lineup, away_lineup, pitcher_stats_home, pitcher_stats_aw
 def run_simulations(games, num_simulations=1000, run_threshold=10.5):
     results = []
     fetch_all_player_stats(games)
-    over_threshold_count = 0
-
     for game in games:
+        over_threshold_count = 0
         home_lineup = game['home_lineup']
         away_lineup = game['away_lineup']
         pitcher_stats_home = pitcher_stats_cache.get(game['home_pitcher'], None)
@@ -310,7 +315,7 @@ def run_simulations(games, num_simulations=1000, run_threshold=10.5):
             if home_score + away_score > run_threshold:
                 over_threshold_count += 1
 
-            print(f"\rRunning sim: {sim}/{num_simulations}", end='')
+            #print(f"\rRunning sim: {sim}/{num_simulations}", end='')
 
         over_threshold_percentage = (over_threshold_count / num_simulations) * 100
 
@@ -345,6 +350,16 @@ def main():
     
     print("Results DataFrame:")
     print(results)
-
+'''
+    for game in games:
+        print(f"Data found for players in {game['away_team']} @ {game['home_team']}:")
+        for player in game['home_lineup'] + game['away_lineup']:
+            player_data = batter_stats_cache.get(player, None)
+            print(f"{player}: {'Yes' if player_data is not None and not player_data.empty else 'No'}")
+        pitcher_data_home = pitcher_stats_cache.get(game['home_pitcher'], None)
+        pitcher_data_away = pitcher_stats_cache.get(game['away_pitcher'], None)
+        print(f"{game['home_pitcher']}: {'Yes' if pitcher_data_home is not None and not pitcher_data_home.empty else 'No'}")
+        print(f"{game['away_pitcher']}: {'Yes' if pitcher_data_away is not None and not pitcher_data_away.empty else 'No'}")
+'''
 if __name__ == "__main__":
     main()
