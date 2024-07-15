@@ -1,119 +1,160 @@
 Twins
 @
-White Sox
+Giants
 
-(51-39)
-8:10 PM
-Guaranteed Rate Field
+(54-41)
+Warmup •
+Oracle Park
 
-(26-66)
+(46-50)
 
 Chris Paddack
 RHP
-5-3, 5.29 ERA, 70 SO
+5-3, 5.18 ERA, 73 SO
 
-Chris Flexen
-RHP
-2-7, 5.08 ERA, 63 SO
+Blake Snell
+LHP
+0-3, 7.85 ERA, 34 SO
 MIN Lineup
-CWS Lineup
-Willi Castro (S) 2B
-Carlos Correa (R) SS
-Trevor Larnach (L) DH
-Jose Miranda (R) 1B
+SF Lineup
+Manuel Margot (R) CF
+Willi Castro (S) SS
+Brooks Lee (S) 2B
+Ryan Jeffers (R) DH
+Carlos Santana (S) 1B
 Max Kepler (L) RF
-Byron Buxton (R) CF
-Brooks Lee (S) 3B
-Ryan Jeffers (R) C
+Diego A. Castillo (R) 3B
+Christian Vázquez (R) C
 Matt Wallner (L) LF
-Lenyn Sosa (R) 3B
-Andrew Benintendi (L) LF
-Andrew Vaughn (R) 1B
-Gavin Sheets (L) RF
-Eloy Jiménez (R) DH
-Paul DeJong (R) SS
-Nicky Lopez (L) 2B
-Corey Julks (R) CF
-Martín Maldonado (R) C
+Jorge Soler (R) DH
+LaMonte Wade Jr. (L) 1B
+Heliot Ramos (R) CF
+Patrick Bailey (S) C
+Michael Conforto (L) LF
+Matt Chapman (R) 3B
+Mike Yastrzemski (L) RF
+Thairo Estrada (R) 2B
+Brett Wisely (L) SS
 
 Gameday
 
-Tickets
-Rangers
+MLB.TV
+Mariners
 @
 Angels
 
-(42-48)
-9:38 PM
+(52-45)
+Warmup •
 Angel Stadium
 
-(37-52)
+(40-55)
 
-Jon Gray
+Logan Gilbert
 RHP
-3-4, 3.92 ERA, 71 SO
+6-5, 2.94 ERA, 115 SO
 
-Davis Daniel
+Carson Fulmer
 RHP
-1-1, 2.70 ERA, 11 SO
-TEX Lineup
+0-2, 3.83 ERA, 42 SO
+SEA Lineup
 LAA Lineup
-Marcus Semien (R) 2B
-Corey Seager (L) SS
-Josh Smith (L) 3B
-Wyatt Langford (R) LF
-Adolis García (R) RF
-Nathaniel Lowe (L) 1B
-Jonah Heim (S) C
-Travis Jankowski (L) DH
-Leody Taveras (S) CF
-Anthony Rendon (R) 3B
+J.P. Crawford (L) SS
+Mitch Garver (R) DH
+Cal Raleigh (S) C
+Julio Rodríguez (R) CF
+Jorge Polanco (S) 2B
+Luke Raley (L) 1B
+Victor Robles (R) RF
+Josh Rojas (L) 3B
+Dylan Moore (R) LF
 Nolan Schanuel (L) 1B
-Kevin Pillar (R) LF
-Keston Hiura (R) DH
+Brandon Drury (R) 3B
+Taylor Ward (R) LF
+Willie Calhoun (L) DH
 Logan O'Hoppe (R) C
-Brandon Drury (R) 2B
 Mickey Moniak (L) CF
+Zach Neto (R) SS
 Jo Adell (R) RF
-Luis Guillorme (L) SS
+Keston Hiura (R) 2B
 
 Gameday
 
-Tickets
-Braves
+MLB.TV
+Blue Jays
 @
 D-backs
 
-(49-39)
-9:40 PM
+(43-52)
+Warmup •
 Chase Field
 
-(45-45)
+(49-47)
 
-Bryce Elder
-RHP
-1-3, 5.76 ERA, 23 SO
+Yusei Kikuchi
+LHP
+4-8, 4.00 ERA, 111 SO
 
-Yilber Diaz
+Zac Gallen
 RHP
-0-0, -.-- ERA, 0 SO
-ATL Lineup
+6-5, 3.33 ERA, 75 SO
+TOR Lineup
 AZ Lineup
+George Springer (R) DH
+Spencer Horwitz (L) 2B
+Vladimir Guerrero Jr. (R) 1B
+Danny Jansen (R) C
+Daulton Varsho (L) LF
+Ernie Clement (R) 3B
+Leo Jiménez (R) SS
+Kevin Kiermaier (L) CF
+Steward Berroa (S) RF
+Ketel Marte (S) DH
+Gabriel Moreno (R) C
+Lourdes Gurriel Jr. (R) LF
+Christian Walker (R) 1B
+Randal Grichuk (R) RF
+Jake McCarthy (L) CF
+Eugenio Suárez (R) 3B
+Kevin Newman (R) 2B
+Geraldo Perdomo (S) SS
+
+Gameday
+
+MLB.TV
+Braves
+@
+Padres
+
+(52-42)
+4:10 PM
+Petco Park
+
+(50-48)
+
+Chris Sale
+LHP
+12-3, 2.74 ERA, 136 SO
+
+Randy Vásquez
+RHP
+2-4, 4.66 ERA, 38 SO
+ATL Lineup
+SD Lineup
 Jarred Kelenic (L) CF
 Ozzie Albies (S) 2B
 Austin Riley (R) 3B
 Matt Olson (L) 1B
 Marcell Ozuna (R) DH
-Adam Duvall (R) RF
+Travis d'Arnaud (R) C
 Eddie Rosario (L) LF
-Sean Murphy (R) C
+Adam Duvall (R) RF
 Orlando Arcia (R) SS
-Corbin Carroll (L) RF
-Ketel Marte (S) 2B
-Joc Pederson (L) DH
-Christian Walker (R) 1B
-Lourdes Gurriel Jr. (R) LF
-Gabriel Moreno (R) C
-Eugenio Suárez (R) 3B
-Alek Thomas (L) CF
-Geraldo Perdomo (S) SS
+Jurickson Profar (S) LF
+Donovan Solano (R) DH
+Manny Machado (R) 3B
+Xander Bogaerts (R) 2B
+Jake Cronenworth (L) 1B
+Ha-Seong Kim (R) SS
+Jackson Merrill (L) CF
+Kyle Higashioka (R) C
+Bryce Johnson (S) RF

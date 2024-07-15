@@ -7,6 +7,14 @@ from pybaseball import playerid_lookup, batting_stats, pitching_stats
 batter_stats_cache = {}
 pitcher_stats_cache = {}
 
+# Average relief pitcher stats
+average_reliever_stats = {
+    'K%': 0.24,
+    'BB%': 0.09,
+    'HR/9': 0.012,
+    'out_rate': 1 - (0.24 + 0.09 + 0.012)
+}
+
 # Mapping of team names to their abbreviations
 team_abbreviations = {
     'D-backs': 'ARI',
@@ -128,32 +136,25 @@ def fetch_all_player_stats(games):
             if pitcher not in pitcher_stats_cache:
                 pitcher_stats_cache[pitcher] = get_player_stats(pitcher, all_pitcher_stats)
 
-def calculate_probabilities(batter_stats, pitcher_stats):
+def calculate_batting_probabilities(batter_stats):
     if batter_stats is not None and not batter_stats.empty:
-        avg = batter_stats['AVG'].mean()
-        obp = batter_stats['OBP'].mean()
-        slg = batter_stats['SLG'].mean()
-        single_rate = batter_stats['1B'].sum() / batter_stats['AB'].sum()
-        double_rate = batter_stats['2B'].sum() / batter_stats['AB'].sum()
-        triple_rate = batter_stats['3B'].sum() / batter_stats['AB'].sum()
-        hr_rate = batter_stats['HR'].sum() / batter_stats['AB'].sum()
+        woba = batter_stats['wOBA'].mean()
+        iso = batter_stats['ISO'].mean()
+        babip = batter_stats['BABIP'].mean()
+        bb_rate = batter_stats['BB%'].mean() / 100
+        k_rate = batter_stats['K%'].mean() / 100
+        single_rate = (batter_stats['1B'].sum() / batter_stats['AB'].sum()) if '1B' in batter_stats.columns else (woba - iso) * babip
+        double_rate = (batter_stats['2B'].sum() / batter_stats['AB'].sum()) if '2B' in batter_stats.columns else iso * 0.2
+        triple_rate = (batter_stats['3B'].sum() / batter_stats['AB'].sum()) if '3B' in batter_stats.columns else iso * 0.05
+        hr_rate = (batter_stats['HR'].sum() / batter_stats['AB'].sum()) if 'HR' in batter_stats.columns else iso * 0.15
     else:
-        avg = 0.250
-        obp = 0.320
-        slg = 0.400
-        single_rate = avg * 0.6
-        double_rate = avg * 0.2
-        triple_rate = avg * 0.05
-        hr_rate = avg * 0.15
-
-    if pitcher_stats is not None and not pitcher_stats.empty:
-        k_rate = pitcher_stats['K%'].mean()
-        bb_rate = pitcher_stats['BB%'].mean()
-        hr_rate_pitcher = pitcher_stats['HR/9'].mean() / 9
-    else:
-        k_rate = 0.20
+        # Use league average values if no data
+        single_rate = 0.15
+        double_rate = 0.05
+        triple_rate = 0.01
+        hr_rate = 0.03
         bb_rate = 0.08
-        hr_rate_pitcher = 0.03
+        k_rate = 0.20
 
     return {
         'strikeout': k_rate,
@@ -165,21 +166,17 @@ def calculate_probabilities(batter_stats, pitcher_stats):
         'out': 1 - (k_rate + bb_rate + single_rate + double_rate + triple_rate + hr_rate)
     }
 
-def simulate_at_bat(batter_stats, pitcher_stats):
-    probabilities = calculate_probabilities(batter_stats, pitcher_stats)
+def simulate_at_bat(probabilities):
     result = random.random()
-
     cumulative_probability = 0
     for outcome, probability in probabilities.items():
         cumulative_probability += probability
         if result < cumulative_probability:
             return outcome
-
     return 'out'
 
 def advance_runners(bases, hit_type):
     score_increment = 0
-
     if hit_type == 'single':
         if bases[2]:
             score_increment += 1
@@ -203,27 +200,65 @@ def advance_runners(bases, hit_type):
     elif hit_type == 'home_run':
         score_increment += sum(bases) + 1
         bases = [False, False, False]
-
     return bases, score_increment
 
-def simulate_game(home_lineup, away_lineup, pitcher_stats_home, pitcher_stats_away):
+def make_pitching_substitution(inning, runs_allowed, current_score_diff):
+    # Define thresholds
+    max_innings = 6
+    max_runs_allowed = 4
+    close_game_diff = 2
+    blowout_diff = 5
+    
+    # Check if the pitcher has exceeded the maximum innings or runs allowed
+    if inning >= max_innings or runs_allowed >= max_runs_allowed:
+        return True
+    
+    # Check if the game is close or a blowout
+    if abs(current_score_diff) <= close_game_diff:
+        return False  # Use the best reliever available
+    elif abs(current_score_diff) >= blowout_diff:
+        return True  # Use a less effective reliever
+
+    # Otherwise, do not make a substitution
+    return False
+
+def simulate_game(home_lineup, away_lineup, starter_stats_home, starter_stats_away):
     innings = 9
     home_score = 0
     away_score = 0
-    lineup_home = home_lineup[:]
-    lineup_away = away_lineup[:]
+    home_pitcher = starter_stats_home
+    away_pitcher = starter_stats_away
+    home_pitcher_runs = 0
+    away_pitcher_runs = 0
 
     for inning in range(1, innings + 1):
-        for team in ['away', 'home']:
-            lineup = lineup_away if team == 'away' else lineup_home
-            pitcher_stats = pitcher_stats_home if team == 'away' else pitcher_stats_away
+        for team in ['home', 'away']:
+            if team == 'home':
+                lineup = home_lineup
+                pitcher_stats = home_pitcher
+                runs_allowed = home_pitcher_runs
+                current_score_diff = home_score - away_score
+                if make_pitching_substitution(inning, runs_allowed, current_score_diff):
+                    pitcher_stats = average_reliever_stats
+                home_pitcher_runs = runs_allowed
+            else:
+                lineup = away_lineup
+                pitcher_stats = away_pitcher
+                runs_allowed = away_pitcher_runs
+                current_score_diff = away_score - home_score
+
+                if make_pitching_substitution(inning, runs_allowed, current_score_diff):
+                    pitcher_stats = average_reliever_stats
+                away_pitcher_runs = runs_allowed
+
             outs = 0
-            bases = [False, False, False]  # Empty bases
+            bases = [False, False, False]
 
             while outs < 3:
                 player = lineup[0]
                 batter_stats = batter_stats_cache.get(player, None)
-                outcome = simulate_at_bat(batter_stats, pitcher_stats)
+                probabilities = calculate_batting_probabilities(batter_stats)
+                outcome = simulate_at_bat(probabilities)
 
                 if outcome == 'strikeout' or outcome == 'out':
                     outs += 1
@@ -232,10 +267,10 @@ def simulate_game(home_lineup, away_lineup, pitcher_stats_home, pitcher_stats_aw
                         if bases[1]:
                             if bases[2]:
                                 bases, increment = advance_runners(bases, 'single')
-                                if team == 'away':
-                                    away_score += increment
-                                else:
+                                if team == 'home':
                                     home_score += increment
+                                else:
+                                    away_score += increment
                             else:
                                 bases[2] = True
                         else:
@@ -244,24 +279,30 @@ def simulate_game(home_lineup, away_lineup, pitcher_stats_home, pitcher_stats_aw
                         bases[0] = True
                 else:
                     bases, increment = advance_runners(bases, outcome)
-                    if team == 'away':
-                        away_score += increment
-                    else:
+                    if team == 'home':
                         home_score += increment
+                    else:
+                        away_score += increment
 
-                lineup.append(lineup.pop(0))  # Rotate lineup
+                lineup.append(lineup.pop(0))
 
     while home_score == away_score:
-        for team in ['away', 'home']:
-            lineup = lineup_away if team == 'away' else lineup_home
-            pitcher_stats = pitcher_stats_home if team == 'away' else pitcher_stats_away
+        for team in ['home', 'away']:
+            if team == 'home':
+                lineup = home_lineup
+                pitcher_stats = average_reliever_stats
+            else:
+                lineup = away_lineup
+                pitcher_stats = average_reliever_stats
+
             outs = 0
-            bases = [False, False, False]  # Empty bases
+            bases = [False, False, False]
 
             while outs < 3:
                 player = lineup[0]
                 batter_stats = batter_stats_cache.get(player, None)
-                outcome = simulate_at_bat(batter_stats, pitcher_stats)
+                probabilities = calculate_batting_probabilities(batter_stats)
+                outcome = simulate_at_bat(probabilities)
 
                 if outcome == 'strikeout' or outcome == 'out':
                     outs += 1
@@ -270,10 +311,10 @@ def simulate_game(home_lineup, away_lineup, pitcher_stats_home, pitcher_stats_aw
                         if bases[1]:
                             if bases[2]:
                                 bases, increment = advance_runners(bases, 'single')
-                                if team == 'away':
-                                    away_score += increment
-                                else:
+                                if team == 'home':
                                     home_score += increment
+                                else:
+                                    away_score += increment
                             else:
                                 bases[2] = True
                         else:
@@ -282,12 +323,12 @@ def simulate_game(home_lineup, away_lineup, pitcher_stats_home, pitcher_stats_aw
                         bases[0] = True
                 else:
                     bases, increment = advance_runners(bases, outcome)
-                    if team == 'away':
-                        away_score += increment
-                    else:
+                    if team == 'home':
                         home_score += increment
+                    else:
+                        away_score += increment
 
-                lineup.append(lineup.pop(0))  # Rotate lineup
+                lineup.append(lineup.pop(0))
 
     return home_score, away_score
 
