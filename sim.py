@@ -1,7 +1,8 @@
 import random
 import pandas as pd
 import sys
-from pybaseball import playerid_lookup, batting_stats, pitching_stats
+from pybaseball import playerid_lookup, batting_stats_bref, pitching_stats_bref
+from datetime import datetime, timedelta
 
 # Cache dictionaries
 batter_stats_cache = {}
@@ -117,16 +118,17 @@ def parse_lineups(file_path):
 def get_player_stats(player_name, stats):
     player_id = playerid_lookup(last=player_name.split()[-1], first=player_name.split()[0])
     if not player_id.empty:
-        player_id = player_id.iloc[0]['key_fangraphs']
-        player_stats = stats[stats['IDfg'] == player_id]
+        player_id = player_id.iloc[0]['key_mlbam']
+        player_stats = stats[stats['mlbID'] == player_id]
         if not player_stats.empty:
             return player_stats
     return None
 
-def fetch_all_player_stats(games):
-    season = 2024
-    all_batter_stats = batting_stats(season, qual=0)
-    all_pitcher_stats = pitching_stats(season, qual=0)
+def fetch_all_player_stats(games): #This is main
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=20)
+    all_batter_stats = batting_stats_bref(start_date=start_date, end_date=end_date)
+    all_pitcher_stats = pitching_stats_bref(start_date=start_date, end_date=end_date)
 
     for game in games:
         for player in game['home_lineup'] + game['away_lineup']:
@@ -136,17 +138,28 @@ def fetch_all_player_stats(games):
             if pitcher not in pitcher_stats_cache:
                 pitcher_stats_cache[pitcher] = get_player_stats(pitcher, all_pitcher_stats)
 
-def calculate_batting_probabilities(batter_stats):
+def calculate_batting_probabilities(batter_stats, pitcher_stats):
     if batter_stats is not None and not batter_stats.empty:
-        woba = batter_stats['wOBA'].mean()
-        iso = batter_stats['ISO'].mean()
+        obp = batter_stats['OBP'].mean()
+        slg = batter_stats['SLG'].mean()
+        # Calculate BABIP
+        batter_stats['BABIP'] = (batter_stats['H'] - batter_stats['HR']) / (batter_stats['AB'] - batter_stats['SO'] - batter_stats['HR'] + batter_stats['SF'])
+
+        # Calculate BB%
+        batter_stats['BB%'] = batter_stats['BB'] / batter_stats['PA']
+
+        # Calculate K%
+        batter_stats['K%'] = batter_stats['SO'] / batter_stats['PA']
+
+        # Calculate mean values
         babip = batter_stats['BABIP'].mean()
         bb_rate = batter_stats['BB%'].mean() / 100
         k_rate = batter_stats['K%'].mean() / 100
-        single_rate = (batter_stats['1B'].sum() / batter_stats['AB'].sum()) if '1B' in batter_stats.columns else (woba - iso) * babip
-        double_rate = (batter_stats['2B'].sum() / batter_stats['AB'].sum()) if '2B' in batter_stats.columns else iso * 0.2
-        triple_rate = (batter_stats['3B'].sum() / batter_stats['AB'].sum()) if '3B' in batter_stats.columns else iso * 0.05
-        hr_rate = (batter_stats['HR'].sum() / batter_stats['AB'].sum()) if 'HR' in batter_stats.columns else iso * 0.15
+
+        single_rate = (batter_stats['1B'].sum() / batter_stats['AB'].sum()) if '1B' in batter_stats.columns else (obp - slg) * babip
+        double_rate = (batter_stats['2B'].sum() / batter_stats['AB'].sum()) if '2B' in batter_stats.columns else slg * 0.2
+        triple_rate = (batter_stats['3B'].sum() / batter_stats['AB'].sum()) if '3B' in batter_stats.columns else slg * 0.05
+        hr_rate = (batter_stats['HR'].sum() / batter_stats['AB'].sum()) if 'HR' in batter_stats.columns else slg * 0.15
     else:
         # Use league average values if no data
         single_rate = 0.15
@@ -156,15 +169,32 @@ def calculate_batting_probabilities(batter_stats):
         bb_rate = 0.08
         k_rate = 0.20
 
-    return {
-        'strikeout': k_rate,
-        'walk': bb_rate,
-        'single': single_rate,
-        'double': double_rate,
-        'triple': triple_rate,
-        'home_run': hr_rate,
-        'out': 1 - (k_rate + bb_rate + single_rate + double_rate + triple_rate + hr_rate)
-    }
+    # Use pitcher stats to adjust probabilities if available
+    if pitcher_stats is not None:
+        k_rate = (k_rate + pitcher_stats.get('K%', 0)) / 2
+        bb_rate = (bb_rate + pitcher_stats.get('BB%', 0)) / 2
+        hr_rate = (hr_rate + pitcher_stats.get('HR/9', 0) / 9) / 2
+        out_rate = 1 - (k_rate + bb_rate + single_rate + double_rate + triple_rate + hr_rate)
+
+        return {
+            'strikeout': k_rate,
+            'walk': bb_rate,
+            'single': single_rate,
+            'double': double_rate,
+            'triple': triple_rate,
+            'home_run': hr_rate,
+            'out': out_rate
+        }
+    else:
+        return {
+            'strikeout': k_rate,
+            'walk': bb_rate,
+            'single': single_rate,
+            'double': double_rate,
+            'triple': triple_rate,
+            'home_run': hr_rate,
+            'out': 1 - (k_rate + bb_rate + single_rate + double_rate + triple_rate + hr_rate)
+        }
 
 def simulate_at_bat(probabilities):
     result = random.random()
@@ -257,7 +287,7 @@ def simulate_game(home_lineup, away_lineup, starter_stats_home, starter_stats_aw
             while outs < 3:
                 player = lineup[0]
                 batter_stats = batter_stats_cache.get(player, None)
-                probabilities = calculate_batting_probabilities(batter_stats)
+                probabilities = calculate_batting_probabilities(batter_stats, pitcher_stats)
                 outcome = simulate_at_bat(probabilities)
 
                 if outcome == 'strikeout' or outcome == 'out':
@@ -301,7 +331,7 @@ def simulate_game(home_lineup, away_lineup, starter_stats_home, starter_stats_aw
             while outs < 3:
                 player = lineup[0]
                 batter_stats = batter_stats_cache.get(player, None)
-                probabilities = calculate_batting_probabilities(batter_stats)
+                probabilities = calculate_batting_probabilities(batter_stats, pitcher_stats)
                 outcome = simulate_at_bat(probabilities)
 
                 if outcome == 'strikeout' or outcome == 'out':
@@ -356,8 +386,6 @@ def run_simulations(games, num_simulations=1000, run_threshold=10.5):
             if home_score + away_score > run_threshold:
                 over_threshold_count += 1
 
-            #print(f"\rRunning sim: {sim}/{num_simulations}", end='')
-
         over_threshold_percentage = (over_threshold_count / num_simulations) * 100
 
         results.append({
@@ -391,16 +419,7 @@ def main():
     
     print("Results DataFrame:")
     print(results)
-'''
-    for game in games:
-        print(f"Data found for players in {game['away_team']} @ {game['home_team']}:")
-        for player in game['home_lineup'] + game['away_lineup']:
-            player_data = batter_stats_cache.get(player, None)
-            print(f"{player}: {'Yes' if player_data is not None and not player_data.empty else 'No'}")
-        pitcher_data_home = pitcher_stats_cache.get(game['home_pitcher'], None)
-        pitcher_data_away = pitcher_stats_cache.get(game['away_pitcher'], None)
-        print(f"{game['home_pitcher']}: {'Yes' if pitcher_data_home is not None and not pitcher_data_home.empty else 'No'}")
-        print(f"{game['away_pitcher']}: {'Yes' if pitcher_data_away is not None and not pitcher_data_away.empty else 'No'}")
-'''
+
 if __name__ == "__main__":
     main()
+
